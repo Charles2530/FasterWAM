@@ -109,6 +109,23 @@ def _phase_result_filename(phase: str) -> str:
     raise ValueError(f"Unsupported phase: {phase}")
 
 
+def _completed_task_rates(tasks, run_output_dir, resume=False):
+    rates = {task: {"clean": None, "random": None} for task in tasks}
+    if resume:
+        for task in tasks:
+            for phase in ("clean", "random"):
+                result_file = run_output_dir / task / _phase_result_filename(phase)
+                if result_file.exists():
+                    # Invalid/truncated result files must not count as complete.
+                    try:
+                        rate = _parse_success_rate(result_file)
+                    except ValueError:
+                        continue
+                    if 0.0 <= rate <= 1.0:
+                        rates[task][phase] = rate
+    return rates
+
+
 def _mean_or_none(values: list[float | None]) -> float | None:
     valid = [v for v in values if v is not None]
     if len(valid) == 0:
@@ -174,11 +191,9 @@ def main(cfg: DictConfig):
 
     extra_overrides = _collect_worker_overrides()
 
-    task_rates: dict[str, dict[str, float | None]] = {
-        task: {"clean": None, "random": None} for task in tasks
-    }
+    task_rates = _completed_task_rates(tasks, run_output_dir, resume=bool(cfg.MULTIRUN.resume))
     failed_records: list[dict[str, Any]] = []
-    pending_tasks = deque(tasks)
+    pending_tasks = deque(task for task in tasks if None in task_rates[task].values())
     running_states: list[RunningState] = []
 
     phase_to_task_config = {
@@ -255,7 +270,8 @@ def main(cfg: DictConfig):
     def try_launch_pending(gpu_id: int) -> None:
         while len(pending_tasks) > 0 and gpu_running_count(gpu_id) < max_tasks_per_gpu:
             task_name = pending_tasks.popleft()
-            running_states.append(launch_phase(task_name=task_name, gpu_id=gpu_id, phase="clean"))
+            phase = "clean" if task_rates[task_name]["clean"] is None else "random"
+            running_states.append(launch_phase(task_name=task_name, gpu_id=gpu_id, phase=phase))
 
     def write_outputs() -> None:
         clean_mean = _mean_or_none([task_rates[t]["clean"] for t in tasks])
@@ -304,6 +320,9 @@ def main(cfg: DictConfig):
         f"manager start tasks={len(tasks)} gpu_ids={gpu_ids} "
         f"max_tasks_per_gpu={max_tasks_per_gpu} output_dir={run_output_dir}"
     )
+    if cfg.MULTIRUN.resume:
+        completed = sum(rate is not None for phases in task_rates.values() for rate in phases.values())
+        log(f"resume: reusing {completed} completed phase results; pending tasks={len(pending_tasks)}")
 
     # Launch initial tasks for each GPU up to capacity.
     for gpu_id in gpu_ids:
@@ -371,7 +390,7 @@ def main(cfg: DictConfig):
                 f"success_rate={success_rate:.4f}"
             )
 
-            if state.phase == "clean":
+            if state.phase == "clean" and task_rates[state.task_name]["random"] is None:
                 running_states.append(launch_phase(
                     task_name=state.task_name,
                     gpu_id=gpu_id,

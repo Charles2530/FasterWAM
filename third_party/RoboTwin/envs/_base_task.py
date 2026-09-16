@@ -409,9 +409,11 @@ class Base_Task(gym.Env):
         load aloha robot urdf file, set root pose and set joints
         """
         if not hasattr(self, "robot"):
-            self.robot = Robot(self.scene, self.need_topp, **kwags)
-            self.robot.set_planner(self.scene)
-            self.robot.init_joints()
+            # Only reuse a robot after both planners and joints are ready.
+            robot = Robot(self.scene, self.need_topp, **kwags)
+            robot.set_planner(self.scene)
+            robot.init_joints()
+            self.robot = robot
         else:
             self.robot.reset(self.scene, self.need_topp, **kwags)
 
@@ -928,7 +930,7 @@ class Base_Task(gym.Env):
                     return actions[1][1]
 
         if self.plan_success is False:
-            return False
+            raise PlanningError("Cannot move after an earlier expert planning failure")
 
         actions = [actions_by_arm1, actions_by_arm2]
         left_actions = get_actions(actions, "left")
@@ -953,7 +955,7 @@ class Base_Task(gym.Env):
                     right_constraint_pose=right.args.get("constraint_pose"),
                 )
                 if self.plan_success is False:
-                    return False
+                    raise PlanningError("Dual-arm expert motion planning failed")
                 continue  # TODO
             else:
                 control_seq = {
@@ -971,7 +973,7 @@ class Base_Task(gym.Env):
                     else:  # left.action == 'gripper'
                         control_seq["left_gripper"] = self.set_gripper(left_pos=left.target_gripper_pos, set_tag="left")
                     if self.plan_success is False:
-                        return False
+                        raise PlanningError("Left-arm expert motion planning failed")
 
                 if right is not None:
                     if right.action == "move":
@@ -983,7 +985,7 @@ class Base_Task(gym.Env):
                         control_seq["right_gripper"] = self.set_gripper(right_pos=right.target_gripper_pos,
                                                                         set_tag="right")
                     if self.plan_success is False:
-                        return False
+                        raise PlanningError("Right-arm expert motion planning failed")
 
             self.take_dense_action(control_seq)
 
@@ -1196,7 +1198,7 @@ class Base_Task(gym.Env):
         contact_point_id: list | float = None,
     ):
         if not self.plan_success:
-            return None, []
+            raise PlanningError("Cannot grasp after an earlier expert planning failure")
         if self.need_plan == False:
             if pre_grasp_dis == grasp_dis:
                 return arm_tag, [
@@ -1222,6 +1224,10 @@ class Base_Task(gym.Env):
             target_dis=grasp_dis,
             contact_point_id=contact_point_id,
         )
+        if pre_grasp_pose is None or grasp_pose is None:
+            # Stop this expert rollout before task code indexes empty actions.
+            self.plan_success = False
+            raise PlanningError(f"No reachable grasp for arm {arm_tag}")
         if pre_grasp_pose == grasp_pose:
             return arm_tag, [
                 Action(arm_tag, "move", target_pose=pre_grasp_pose),

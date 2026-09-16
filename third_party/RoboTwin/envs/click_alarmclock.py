@@ -42,6 +42,10 @@ class click_alarmclock(Base_Task):
     def play_once(self):
         # Determine which arm to use based on alarm clock's position (right if positive x, left otherwise)
         arm_tag = ArmTag("right" if self.alarm.get_pose().p[0] > 0 else "left")
+        grasp_pose = self.get_grasp_pose(self.alarm, pre_dis=0.1, contact_point_id=0, arm_tag=arm_tag)
+        if grasp_pose is None:
+            self.plan_success = False
+            raise PlanningError("No reachable alarm-clock contact pose")
     
         # Move the gripper above the top center of the alarm clock and close the gripper to simulate a click
         # Note: although the code structure resembles a grasp, it is used here to simulate a touch/click action
@@ -52,8 +56,7 @@ class click_alarmclock(Base_Task):
                 Action(
                     arm_tag,
                     "move",
-                    self.get_grasp_pose(self.alarm, pre_dis=0.1, contact_point_id=0, arm_tag=arm_tag)[:3] +
-                    [0.5, -0.5, 0.5, 0.5],
+                    grasp_pose[:3] + [0.5, -0.5, 0.5, 0.5],
                 ),
                 Action(arm_tag, "close", target_gripper_pos=0.0),
             ],

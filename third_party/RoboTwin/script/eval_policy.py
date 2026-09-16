@@ -7,6 +7,7 @@ sys.path.append(f"./policy")
 sys.path.append("./description/utils")
 from envs import CONFIGS_PATH
 from envs.utils.create_actor import UnStableError
+from envs.utils.action import PlanningError
 
 import numpy as np
 from pathlib import Path
@@ -272,7 +273,10 @@ def eval_policy(task_name,
                 TASK_ENV.setup_demo(now_ep_num=now_id, seed=now_seed, is_test=True, **args)
                 episode_info = TASK_ENV.play_once()
                 TASK_ENV.close_env()
-            except UnStableError as e:
+            except (UnStableError, PlanningError, np.linalg.LinAlgError) as e:
+                # Invalid expert pose matrices reject this seed before policy evaluation.
+                if isinstance(e, np.linalg.LinAlgError):
+                    print(f"Skipping expert seed {now_seed}: {e}")
                 # print(" -------------")
                 # print("Error: ", e)
                 # print(" -------------")
@@ -286,10 +290,9 @@ def eval_policy(task_name,
                 print("Stack Trace: ", traceback.format_exc())
                 print(" -------------")
                 TASK_ENV.close_env()
-                now_seed += 1
                 args["render_freq"] = render_freq
-                print("error occurs !")
-                continue
+                # A broken CUDA/planner setup cannot be fixed by changing seeds.
+                raise
 
         if (not expert_check) or (TASK_ENV.plan_success and TASK_ENV.check_success()):
             succ_seed += 1
@@ -321,9 +324,7 @@ def eval_policy(task_name,
             print("Stack Trace: ", traceback.format_exc())
             print(" -------------")
             TASK_ENV.close_env()
-            now_seed += 1
-            print("error occurs !")
-            continue
+            raise
         episode_info_list = [episode_info["info"]]
         results = generate_episode_descriptions(args["task_name"], episode_info_list, test_num)
         instruction = np.random.choice(results[0][instruction_type])

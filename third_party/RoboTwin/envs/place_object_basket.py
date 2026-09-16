@@ -84,13 +84,18 @@ class place_object_basket(Base_Task):
         place_pose[3:] = (-1, 0, 0, 0) if self.arm_tag == "left" else (0.05, 0, 0, 0.99)
 
         # Place the toy car in the basket
-        self.move(self.place_actor(
-            self.object,
-            arm_tag=self.arm_tag,
-            target_pose=place_pose,
-            dis=0.02,
-            is_open=False,
-        ))
+        try:
+            self.move(self.place_actor(
+                self.object,
+                arm_tag=self.arm_tag,
+                target_pose=place_pose,
+                dis=0.02,
+                is_open=False,
+            ))
+        except PlanningError:
+            # Preserve the task's existing fallback when move raises instead
+            # of returning False on an unreachable placement.
+            self.plan_success = False
 
         if not self.plan_success:
             self.plan_success = True  # Try new way

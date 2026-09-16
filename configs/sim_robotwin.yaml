@@ -10,6 +10,8 @@ gpu_id: 0
 
 model:
   load_text_encoder: true
+  # Reuse the local Wan T5/VAE .pth files under DIFFSYNTH_MODEL_BASE_PATH.
+  redirect_common_files: false
   skip_dit_load_from_pretrain: true
   action_dit_pretrained_path: null
 
@@ -43,6 +45,8 @@ MULTIRUN:
   enabled: false
   num_gpus: 8
   max_tasks_per_gpu: 2
+  # Explicitly reuse completed phase results in the same run directory.
+  resume: false
 
 hydra:
   job:

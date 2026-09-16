@@ -1,0 +1,11 @@
+{
+  "utc": "2026-09-15T02:17:26.711945+00:00",
+  "pid": 1565353,
+  "intra_op_threads": 1,
+  "inter_op_threads": 64,
+  "os_threads": 3,
+  "cpu.max": "11200000 100000\n",
+  "cpu.stat": "usage_usec 845131047602\nuser_usec 695300240926\nsystem_usec 149830806675\ncore_sched.force_idle_usec 0\nnr_periods 8385672\nnr_throttled 62\nthrottled_usec 38127200\nnr_bursts 0\nburst_usec 0\n",
+  "cpuset.cpus.effective": "0-127\n",
+  "gpu_telemetry": "timestamp, index, uuid, name, utilization.gpu [%], memory.used [MiB], power.draw [W], temperature.gpu, clocks.current.sm [MHz]\n2026/09/15 02:17:26.847, 0, GPU-3d9bae9f-f6a5-a533-682a-2990f19ffa90, NVIDIA H100 80GB HBM3, 0 %, 4 MiB, 71.72 W, 38, 345 MHz\n2026/09/15 02:17:26.849, 1, GPU-d67482aa-44bc-1a33-2545-de34f4bb6c82, NVIDIA H100 80GB HBM3, 0 %, 1 MiB, 70.93 W, 35, 345 MHz\n2026/09/15 02:17:26.855, 2, GPU-6c47d827-68bc-9d8f-448e-55624a5f2f65, NVIDIA H100 80GB HBM3, 0 %, 1 MiB, 71.51 W, 26, 345 MHz\n2026/09/15 02:17:26.856, 3, GPU-a481f1cc-7ac4-a6c3-b8a4-eed1d39e45aa, NVIDIA H100 80GB HBM3, 0 %, 1 MiB, 74.96 W, 26, 345 MHz\n2026/09/15 02:17:26.857, 4, GPU-a60182ac-1fbd-0654-4298-7dfab8d789ca, NVIDIA H100 80GB HBM3, 0 %, 1 MiB, 72.26 W, 26, 345 MHz\n2026/09/15 02:17:26.868, 5, GPU-11bb96fb-3b4c-98eb-f310-70437157969c, NVIDIA H100 80GB HBM3, 0 %, 1 MiB, 69.33 W, 26, 345 MHz\n2026/09/15 02:17:26.869, 6, GPU-7d80084d-f83b-1a50-3007-35e8f2af67c2, NVIDIA H100 80GB HBM3, 0 %, 1 MiB, 70.87 W, 27, 345 MHz\n2026/09/15 02:17:26.871, 7, GPU-69cdf81a-1c5b-4e7c-54e2-2dd45eb25e36, NVIDIA H100 80GB HBM3, 0 %, 1 MiB, 70.28 W, 26, 345 MHz\n"
+}

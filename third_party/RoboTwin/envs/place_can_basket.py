@@ -84,15 +84,20 @@ class place_can_basket(Base_Task):
             place_pose[3:] = ((-1, 0, 0, 0) if self.arm_tag == "left" else (0.05, 0, 0, 0.99))
 
         # Place the can at the selected position into the basket
-        self.move(
-            self.place_actor(
-                self.can,
-                arm_tag=self.arm_tag,
-                target_pose=place_pose,
-                dis=0.02,
-                is_open=False,
-                constrain="free",
-            ))
+        try:
+            self.move(
+                self.place_actor(
+                    self.can,
+                    arm_tag=self.arm_tag,
+                    target_pose=place_pose,
+                    dis=0.02,
+                    is_open=False,
+                    constrain="free",
+                ))
+        except PlanningError:
+            # This task has an explicit recovery motion for a failed placement.
+            # Keep it reachable when Base_Task.move raises on planning failure.
+            self.plan_success = False
 
         # If planning was not successful before, change to another posture to place the can
         if self.plan_success is False:

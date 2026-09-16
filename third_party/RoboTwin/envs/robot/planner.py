@@ -12,6 +12,8 @@ import envs._GLOBAL_CONFIGS as CONFIGS
 
 try:
     # ********************** CuroboPlanner (optional) **********************
+    from .warp_cache import configure_warp_cache
+    configure_warp_cache()
     from curobo.types.math import Pose as CuroboPose
     import time
     from curobo.types.robot import JointState
@@ -37,6 +39,7 @@ try:
             yml_path=None,
         ):
             super().__init__()
+            configure_warp_cache()
             ta.setup_logging("CRITICAL")  # hide logging
             logger.setup_logger(level="error", logger_name="'curobo")
 

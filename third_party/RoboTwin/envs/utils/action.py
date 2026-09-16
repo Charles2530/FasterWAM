@@ -4,6 +4,10 @@ import numpy as np
 import sapien
 
 
+class PlanningError(RuntimeError):
+    """The expert cannot produce a valid action for this scene/seed."""
+
+
 class ArmTag:
     _instances = {}
 
